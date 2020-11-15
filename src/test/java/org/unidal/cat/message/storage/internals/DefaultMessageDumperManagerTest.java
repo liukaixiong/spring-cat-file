@@ -63,10 +63,10 @@ public class DefaultMessageDumperManagerTest {
         MessageId id = tree.getFormatMessageId();
 //        MessageId id = process(logId, tree);
         Thread.sleep(1000);
-
+        // 基于内存查找
         ByteBuf byteBuf = m_finderManager.find(tree.getFormatMessageId());
-//        ByteBuf byteBuf = null;
         if (byteBuf == null) {
+            // 本地文件查找
             Bucket bucket = m_bucketManager
                     .getBucket(id.getDomain(), NetworkInterfaceManager.INSTANCE.getLocalHostAddress(), id.getHour(), false);
 
@@ -82,12 +82,19 @@ public class DefaultMessageDumperManagerTest {
         Thread.sleep(2000);
 
 //        process("cat-c0a8e901-445933-1479", tree);
-
-//        messageDumperManager.close(id.getHour());
+// 需要注意的是，当前小时的数据如果不执行关闭的话，是不会落盘的。
+        messageDumperManager.close(id.getHour());
 
         System.in.read();
     }
 
+    /**
+     * 执行存储写入本地文件
+     *
+     * @param logId
+     * @param tree
+     * @return
+     */
     private MessageId process(String logId, DefaultMessageTree tree) {
         tree.setFormatMessageId(null);
         tree.setMessageId(logId);

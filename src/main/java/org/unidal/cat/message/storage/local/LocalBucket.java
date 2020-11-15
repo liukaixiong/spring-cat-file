@@ -248,6 +248,7 @@ public class LocalBucket implements Bucket {
             try {
                 m_header.m_segment.flushAndClose();
 
+                // 假设有没跟上当前小时的数据，还在缓存中，那么这里一并处理
                 for (SegmentCache cache : m_caches.values()) {
                     cache.flushAndClose();
                 }
