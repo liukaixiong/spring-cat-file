@@ -20,6 +20,9 @@ public class TestCase {
         int hour = (int) TimeUnit.MILLISECONDS.toHours(time);
         long day = TimeUnit.MILLISECONDS.toDays(time);
         System.out.println(hour + "\t" + day);
+
+        String s = TimeUnit.DAYS.toDays(System.currentTimeMillis()) + "";
+        System.out.println(s);
     }
 
     @Test

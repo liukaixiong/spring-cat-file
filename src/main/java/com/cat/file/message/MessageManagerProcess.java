@@ -114,7 +114,6 @@ public class MessageManagerProcess implements ApplicationContextAware, Initializ
                 if (byteBuf != null) {
                     // 前4位是数据长度
                     int byteBufLength = byteBuf.readInt();
-                    System.out.println("长度:" + byteBufLength);
                     return messageCodec.decode(byteBuf, clazz);
                 }
             }

@@ -19,6 +19,7 @@
 package com.cat.file.message.internal;
 
 import com.cat.file.message.config.NetworkInterfaceManager;
+import com.cat.file.message.config.props.StorageProperties;
 import com.cat.file.message.utils.MessageUtils;
 import io.netty.buffer.ByteBuf;
 
@@ -43,7 +44,7 @@ public abstract class AbstractMessageTree<T> implements MessageTree<T> {
     private Integer id;
 
     public AbstractMessageTree(String domain, String ipAddress, Integer id, Date createTime, T message) {
-        this.domain = domain;
+        this.domain = StorageProperties.logPrefix + domain;
         this.ipAddress = ipAddress;
         this.message = message;
         this.createTime = createTime;
@@ -51,7 +52,7 @@ public abstract class AbstractMessageTree<T> implements MessageTree<T> {
     }
 
     public AbstractMessageTree(String domain, Integer id, Date createTime, T message) {
-        this.domain = domain;
+        this.domain = StorageProperties.logPrefix + domain;
         this.ipAddress = NetworkInterfaceManager.INSTANCE.getLocalHostAddress();
         this.message = message;
         this.createTime = createTime;
@@ -120,7 +121,7 @@ public abstract class AbstractMessageTree<T> implements MessageTree<T> {
     @Override
     public String getMessageId() {
         if (this.messageId == null) {
-            return MessageUtils.genMessageId(this.domain, this.ipAddress, this.id, this.createTime);
+            return MessageUtils.genMessageId(getDomain(), this.ipAddress, this.id, this.createTime);
         }
         return this.messageId;
     }

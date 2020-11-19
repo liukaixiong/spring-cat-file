@@ -22,6 +22,9 @@ public class FastJsonMessageCodec implements MessageCodec {
 
     @Override
     public byte[] encode(Object obj) {
+        if (obj instanceof String) {
+            return ((String) obj).getBytes();
+        }
         return JSON.toJSONString(obj).getBytes();
     }
 

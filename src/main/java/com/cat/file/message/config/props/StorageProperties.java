@@ -28,10 +28,12 @@ import java.io.File;
 @ConfigurationProperties(prefix = "spring.cat.file")
 public class StorageProperties implements Initializable {
 
+    public static String logPrefix = "text_";
+
     /**
      * 文件存储目录位置
      */
-    private String baseDataDir = "\\data\\appdatas\\cat\\bucket\\";
+    private String baseDataDir = "/data/appdatas/cat/bucket/";
 
     /**
      * 是否本地存储
