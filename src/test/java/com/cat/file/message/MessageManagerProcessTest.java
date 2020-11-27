@@ -47,6 +47,17 @@ public class MessageManagerProcessTest extends TestCase {
         testGetMessageObject();
     }
 
+
+    @Test
+    public void testMsgId() throws Exception {
+        for (int i = 0; i < 10; i++) {
+            JsonMessageTree messageTree = new JsonMessageTree("cat", 123, new Date(), null);
+            System.out.println(messageTree.getMessageId());
+            Thread.sleep(2000);
+        }
+
+    }
+
     @Test
     public void testGetMessageObject() {
         JSONObject messageObject = messageManagerProcess.getMessageObject(logId, JSONObject.class);

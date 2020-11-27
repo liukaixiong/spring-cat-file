@@ -51,121 +51,120 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DefaultMessageDumper extends ContainerHolder implements MessageDumper {
 
-	@Autowired
-	private BlockDumperManager m_blockDumperManager;
+    @Autowired
+    private BlockDumperManager m_blockDumperManager;
 
-	@Autowired
-	private BucketManager m_bucketManager;
+    @Autowired
+    private BucketManager m_bucketManager;
 
-	@Autowired
-	private ServerStatisticManager m_statisticManager;
+    @Autowired
+    private ServerStatisticManager m_statisticManager;
 
-	@Autowired
-	private StorageProperties storageProperties;
+    @Autowired
+    private StorageProperties storageProperties;
 
-	private List<BlockingQueue<MessageTree>> m_queues = new ArrayList<BlockingQueue<MessageTree>>();
+    private List<BlockingQueue<MessageTree>> m_queues = new ArrayList<BlockingQueue<MessageTree>>();
 
-	private List<MessageProcessor> m_processors = new ArrayList<MessageProcessor>();
+    private List<MessageProcessor> m_processors = new ArrayList<MessageProcessor>();
 
-	private AtomicInteger m_failCount = new AtomicInteger(-1);
+    private AtomicInteger m_failCount = new AtomicInteger(-1);
 
-	private Logger m_logger = LoggerFactory.getLogger(getClass());
-	private long m_total;
+    private Logger m_logger = LoggerFactory.getLogger(getClass());
+    private long m_total;
 
-	private int m_processThreads;
+    private int m_processThreads;
 
-	@Override
-	public void awaitTermination(int hour) throws InterruptedException {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
-		String date = sdf.format(new Date(hour * TimeHelper.ONE_HOUR));
+    @Override
+    public void awaitTermination(int hour) throws InterruptedException {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
+        String date = sdf.format(new Date(hour * TimeHelper.ONE_HOUR));
 
-		m_logger.info("starting close message processor " + date);
-		closeMessageProcessor();
-		m_logger.info("end close dumper processor " + date);
+        m_logger.info("starting close message processor " + date);
+        closeMessageProcessor();
+        m_logger.info("end close dumper processor " + date);
 
-		m_logger.info("starting close dumper manager " + date);
-		m_blockDumperManager.close(hour);
-		m_logger.info("end close dumper manager " + date);
+        m_logger.info("starting close dumper manager " + date);
+        m_blockDumperManager.close(hour);
+        m_logger.info("end close dumper manager " + date);
 
-		m_logger.info("starting close bucket manager " + date);
-		m_bucketManager.closeBuckets(hour);
-		m_logger.info("end close bucket manager " + date);
-	}
+        m_logger.info("starting close bucket manager " + date);
+        m_bucketManager.closeBuckets(hour);
+        m_logger.info("end close bucket manager " + date);
+    }
 
-	private void closeMessageProcessor() throws InterruptedException {
-		while (true) {
-			boolean allEmpty = true;
+    private void closeMessageProcessor() throws InterruptedException {
+        while (true) {
+            boolean allEmpty = true;
 
-			for (BlockingQueue<MessageTree> queue : m_queues) {
-				if (!queue.isEmpty()) {
-					allEmpty = false;
-					break;
-				}
-			}
+            for (BlockingQueue<MessageTree> queue : m_queues) {
+                if (!queue.isEmpty()) {
+                    allEmpty = false;
+                    break;
+                }
+            }
 
-			if (allEmpty) {
-				break;
-			} else {
-				TimeUnit.MILLISECONDS.sleep(1);
-			}
-		}
+            if (allEmpty) {
+                break;
+            } else {
+                TimeUnit.MILLISECONDS.sleep(1);
+            }
+        }
 
-		for (MessageProcessor processor : m_processors) {
-			processor.shutdown();
-			super.release(processor);
-		}
-	}
+        for (MessageProcessor processor : m_processors) {
+            processor.shutdown();
+            super.release(processor);
+        }
+    }
 
-	public void enableLogging(Logger logger) {
-		m_logger = logger;
-	}
+    public void enableLogging(Logger logger) {
+        m_logger = logger;
+    }
 
-	private int getIndex(String key) {
-		return (Math.abs(key.hashCode())) % (m_processThreads);
-	}
+    private int getIndex(String key) {
+        return (Math.abs(key.hashCode())) % (m_processThreads);
+    }
 
-	@Override
-	public void initialize(int hour) {
-		int processThreads = storageProperties.getMessageProcessorThreads();
-		m_processThreads = processThreads;
+    @Override
+    public void initialize(int hour) {
+        int processThreads = storageProperties.getMessageProcessorThreads();
+        m_processThreads = processThreads;
 
-		for (int i = 0; i < processThreads; i++) {
-			BlockingQueue<MessageTree> queue = new ArrayBlockingQueue<MessageTree>(10000);
-			MessageProcessor processor = lookup(MessageProcessor.class);
+        for (int i = 0; i < processThreads; i++) {
+            BlockingQueue<MessageTree> queue = new ArrayBlockingQueue<MessageTree>(10000);
+            MessageProcessor processor = lookup(MessageProcessor.class);
 
-			m_queues.add(queue);
-			m_processors.add(processor);
+            m_queues.add(queue);
+            m_processors.add(processor);
 
-			processor.initialize(hour, i, queue);
-			Threads.forGroup("Cat").start(processor);
-		}
-	}
+            processor.initialize(hour, i, queue);
+            Threads.forGroup("Cat").start(processor);
+        }
+    }
 
-	@Override
-	public void process(MessageTree tree) {
-		MessageId id = tree.getFormatMessageId();
-		String domain = id.getDomain();
-		// hash by ip address and block hash by domain
-		// int index = getIndex(id.getDomain());
-		int index = getIndex(id.getIpAddressInHex());
+    @Override
+    public void process(MessageTree tree) {
+        MessageId id = tree.getFormatMessageId();
+        String domain = id.getDomain();
+        // hash by ip address and block hash by domain
+        // int index = getIndex(id.getDomain());
+        int index = getIndex(id.getIpAddressInHex());
 
-		BlockingQueue<MessageTree> queue = m_queues.get(index);
-		boolean success = queue.offer(tree);
-		if (!success) {
-			m_statisticManager.addMessageDumpLoss(1);
+        BlockingQueue<MessageTree> queue = m_queues.get(index);
+        boolean success = queue.offer(tree);
+        if (!success) {
+            m_statisticManager.addMessageDumpLoss(1);
 
-			if ((m_failCount.incrementAndGet() % 100) == 0) {
-				LogUtils.logError(new MessageQueueFullException("Error when adding message to queue, fails: " + m_failCount));
+            if ((m_failCount.incrementAndGet() % 100) == 0) {
+                LogUtils.logError(new MessageQueueFullException("Error when adding message to queue, fails: " + m_failCount));
 
-				m_logger.info("message tree queue is full " + m_failCount + " index " + index);
-				// tree.getBuffer().release();
-			}
-		} else {
-			m_statisticManager.addMessageSize(domain, tree.getBuffer().readableBytes());
-			m_logger.info("添加一条消息到异步队列中.");
+                m_logger.info("message tree queue is full " + m_failCount + " index " + index);
+                // tree.getBuffer().release();
+            }
+        } else {
+            m_statisticManager.addMessageSize(domain, tree.getBuffer().readableBytes());
 //			if ((++m_total) % CatConstants.SUCCESS_COUNT == 0) {
 //				m_statisticManager.addMessageDump(CatConstants.SUCCESS_COUNT);
 //			}
-		}
-	}
+        }
+    }
 }

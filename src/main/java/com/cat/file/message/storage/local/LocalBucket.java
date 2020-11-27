@@ -137,7 +137,7 @@ public class LocalBucket implements Bucket {
             int offset = e.getValue();
 
             m_index.write(id, dataOffset, offset);
-            logger.info("将消息编号:{}进行落盘,块的地址:{},块的偏移量:{}", id, dataOffset, offset);
+            logger.debug("将消息编号:{}进行落盘,块的地址:{},块的偏移量:{}", id, dataOffset, offset);
         }
     }
 

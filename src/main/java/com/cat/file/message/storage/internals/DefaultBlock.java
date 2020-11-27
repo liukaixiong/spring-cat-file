@@ -176,7 +176,6 @@ public class DefaultBlock implements Block {
 
             buf.readBytes(m_out, len);
             m_offsets.put(id, m_offset);
-            logger.info("将消息块加入到块缓存中，等待刷盘 ： {}", id.toString());
             m_offset += len;
         }
     }

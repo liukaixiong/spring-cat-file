@@ -163,12 +163,13 @@ public class MessageManagerProcess implements ApplicationContextAware, Initializ
         storeDisk(null);
     }
 
-    private void storeDisk(Long hours) {
+    private synchronized void storeDisk(Long hours) {
         this.currentHourList.forEach((hour) -> {
             if (hours == null || hour < hours) {
                 close(hour);
             }
         });
+        currentHourList.clear();
     }
 
     @Override
